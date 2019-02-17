@@ -80,15 +80,19 @@ def create_bell_circuit(bell_state_type):
 
 class HBox(pygame.sprite.RenderPlain):
     """Arranges sprites horizontally"""
-    def __init__(self, *sprites):
+    def __init__(self, xpos, ypos, *sprites):
         pygame.sprite.RenderPlain.__init__(self, sprites)
+        self.xpos = xpos
+        self.ypos = ypos
         self.arrange()
 
     def arrange(self):
-        next_xpos = 0
+        next_xpos = self.xpos
+        next_ypos = self.ypos
         sprite_list = self.sprites()
         for sprite in sprite_list:
             sprite.rect.left = next_xpos
+            sprite.rect.top = next_ypos
             next_xpos += sprite.rect.width
 
 class VBox(pygame.sprite.RenderPlain):
@@ -208,8 +212,8 @@ def main():
     histogram = MeasurementsHistogram(circuit)
     qsphere = QSphere(circuit)
 
-    allsprites = HBox(circuit_diagram, qsphere, histogram)
-    # allsprites = VBox(circuit_diagram, qsphere, histogram)
+    top_sprites = HBox(0, 0, circuit_diagram)
+    bottom_sprites = HBox(0, 300, qsphere, histogram)
 
     # Main Loop
     going = True
@@ -232,16 +236,21 @@ def main():
                     cur_bell_state  = (cur_bell_state + index_increment) % NUM_BELL_STATES
 
                     circuit = create_bell_circuit(cur_bell_state)
+
                     circuit_diagram.set_circuit(circuit)
                     qsphere.set_circuit(circuit)
                     histogram.set_circuit(circuit)
-                    allsprites.arrange()
 
-        allsprites.update()
+                    top_sprites.arrange()
+                    bottom_sprites.arrange()
+
+        # top_sprites.update()
+        # bottom_sprites.update()
 
         #Draw Everything
         screen.blit(background, (0, 0))
-        allsprites.draw(screen)
+        top_sprites.draw(screen)
+        bottom_sprites.draw(screen)
         pygame.display.flip()
 
     pygame.quit()
