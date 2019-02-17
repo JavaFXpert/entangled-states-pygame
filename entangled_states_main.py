@@ -21,7 +21,7 @@ NUM_BELL_STATES = 4
 
 DEFAULT_NUM_SHOTS = 100
 
-WINDOW_SIZE = 1000, 600
+WINDOW_SIZE = 1500, 600
 
 WHITE = 255, 255, 255
 BLACK = 0, 0, 0
@@ -78,6 +78,21 @@ def create_bell_circuit(bell_state_type):
     return qc
 
 
+class HBox(pygame.sprite.RenderPlain):
+    """Arranges sprites horizontally"""
+    def __init__(self, *sprites):
+        pygame.sprite.RenderPlain.__init__(self, sprites)
+        self.arrange()
+
+    def arrange(self):
+        next_ypos = 0
+        sprite_list = self.sprites()
+        for sprite in sprite_list:
+            print('sprite: ', sprite)
+            # sprite.rect = Rect((next_ypos, 0), (sprite.rect.width, 200))
+            sprite.rect.left = next_ypos
+            next_ypos += sprite.rect.width
+
 class CircuitDiagram(pygame.sprite.Sprite):
     """Displays a circuit diagram"""
     def __init__(self, circuit):
@@ -123,10 +138,8 @@ class MeasurementsHistogram(pygame.sprite.Sprite):
 
         job_sim = execute(complete_circuit, backend_sim, shots=num_shots)
 
-        # Grab the results from the job.
         result_sim = job_sim.result()
 
-        # Print the counts, which are contained in a Python dictionary
         counts = result_sim.get_counts(complete_circuit)
         print(counts)
 
@@ -159,9 +172,7 @@ def main():
     circuit_diagram = CircuitDiagram(circuit)
     histogram = MeasurementsHistogram(circuit)
 
-    # allsprites = pygame.sprite.RenderPlain(circuit_diagram)
-    allsprites = pygame.sprite.RenderPlain(circuit_diagram, histogram)
-
+    allsprites = HBox(circuit_diagram, histogram)
 
     # Main Loop
     going = True
@@ -186,8 +197,7 @@ def main():
                     circuit = create_bell_circuit(cur_bell_state)
                     circuit_diagram.set_circuit(circuit)
                     histogram.set_circuit(circuit)
-                    # allsprites = pygame.sprite.RenderPlain(circuit_diagram)
-                    allsprites = pygame.sprite.RenderPlain(circuit_diagram, histogram)
+                    allsprites.arrange()
 
         allsprites.update()
 
