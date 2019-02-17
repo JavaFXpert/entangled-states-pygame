@@ -81,7 +81,15 @@ class CircuitDiagram(pygame.sprite.Sprite):
     """Displays a circuit diagram"""
     def __init__(self, circuit):
         pygame.sprite.Sprite.__init__(self)
+        self.image = None
+        self.rect = None
+        self.set_circuit(circuit)
 
+    # def update(self):
+    #     # Nothing yet
+    #     a = 1
+
+    def set_circuit(self, circuit):
         circuit_drawing = circuit.draw(output='mpl')
 
         # TODO: Create a save_fig method that works cross-platform
@@ -89,10 +97,6 @@ class CircuitDiagram(pygame.sprite.Sprite):
         circuit_drawing.savefig("data/bell_circuit.png")
 
         self.image, self.rect = load_image('bell_circuit.png', -1)
-
-    def update(self):
-        # Nothing yet
-        a = 1
 
 
 def main():
@@ -127,12 +131,18 @@ def main():
             if event.type == QUIT:
                 going = False
             elif event.type == KEYDOWN:
+                index_increment = 0
                 if event.key == K_ESCAPE:
                     going = False
-                elif event.key == K_RIGHT:
-                    cur_bell_state  = (cur_bell_state + 1) % NUM_BELL_STATES
+                elif event.key == K_RIGHT or event.key == K_DOWN:
+                    index_increment = 1
+                elif event.key == K_LEFT or event.key == K_UP:
+                    index_increment = -1
+                if index_increment != 0:
+                    cur_bell_state  = (cur_bell_state + index_increment) % NUM_BELL_STATES
+
                     circuit = create_bell_circuit(cur_bell_state)
-                    circuit_diagram = CircuitDiagram(circuit)
+                    circuit_diagram.set_circuit(circuit)
                     allsprites = pygame.sprite.RenderPlain(circuit_diagram)
 
         allsprites.update()
