@@ -17,6 +17,7 @@ PHI_PLUS = 0
 PHI_MINUS = 1
 PSI_PLUS = 2
 PSI_MINUS = 3
+NUM_BELL_STATES = 4
 
 WINDOW_SIZE = 600, 600
 
@@ -108,14 +109,15 @@ def main():
     screen.blit(background, (0, 0))
     pygame.display.flip()
 
+    cur_bell_state = PHI_PLUS
+
     # Prepare objects
     clock = pygame.time.Clock()
-    circuit = create_bell_circuit(PHI_PLUS)
+    circuit = create_bell_circuit(cur_bell_state)
     circuit_diagram = CircuitDiagram(circuit)
     allsprites = pygame.sprite.RenderPlain(circuit_diagram)
 
-
-#Main Loop
+    # Main Loop
     going = True
     while going:
         clock.tick(60)
@@ -124,8 +126,14 @@ def main():
         for event in pygame.event.get():
             if event.type == QUIT:
                 going = False
-            elif event.type == KEYDOWN and event.key == K_ESCAPE:
-                going = False
+            elif event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
+                    going = False
+                elif event.key == K_RIGHT:
+                    cur_bell_state  = (cur_bell_state + 1) % NUM_BELL_STATES
+                    circuit = create_bell_circuit(cur_bell_state)
+                    circuit_diagram = CircuitDiagram(circuit)
+                    allsprites = pygame.sprite.RenderPlain(circuit_diagram)
 
         allsprites.update()
 
