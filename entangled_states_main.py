@@ -97,14 +97,18 @@ class HBox(pygame.sprite.RenderPlain):
 
 class VBox(pygame.sprite.RenderPlain):
     """Arranges sprites vertically"""
-    def __init__(self, *sprites):
+    def __init__(self, xpos, ypos, *sprites):
         pygame.sprite.RenderPlain.__init__(self, sprites)
+        self.xpos = xpos
+        self.ypos = ypos
         self.arrange()
 
     def arrange(self):
-        next_ypos = 0
+        next_xpos = self.xpos
+        next_ypos = self.ypos
         sprite_list = self.sprites()
         for sprite in sprite_list:
+            sprite.rect.left = next_xpos
             sprite.rect.top = next_ypos
             next_ypos += sprite.rect.height
 
@@ -152,7 +156,7 @@ class QSphere(pygame.sprite.Sprite):
         qsphere.savefig("data/bell_qsphere.png")
 
         self.image, self.rect = load_image('bell_qsphere.png', -1)
-
+        self.rect.inflate_ip(-100, -100)
 
 class MeasurementsHistogram(pygame.sprite.Sprite):
     """Displays a histogram with measurements"""
@@ -213,7 +217,10 @@ def main():
     qsphere = QSphere(circuit)
 
     top_sprites = HBox(0, 0, circuit_diagram)
-    bottom_sprites = HBox(0, 300, qsphere, histogram)
+    bottom_sprites = HBox(0, 200, qsphere, histogram)
+
+    # top_sprites = VBox(0, 0, circuit_diagram)
+    # bottom_sprites = VBox(300, 0, qsphere, histogram)
 
     # Main Loop
     going = True
