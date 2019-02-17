@@ -19,7 +19,9 @@ PSI_PLUS = 2
 PSI_MINUS = 3
 NUM_BELL_STATES = 4
 
-WINDOW_SIZE = 600, 600
+DEFAULT_NUM_SHOTS = 100
+
+WINDOW_SIZE = 1000, 600
 
 WHITE = 255, 255, 255
 BLACK = 0, 0, 0
@@ -76,7 +78,6 @@ def create_bell_circuit(bell_state_type):
     return qc
 
 
-
 class CircuitDiagram(pygame.sprite.Sprite):
     """Displays a circuit diagram"""
     def __init__(self, circuit):
@@ -99,6 +100,42 @@ class CircuitDiagram(pygame.sprite.Sprite):
         self.image, self.rect = load_image('bell_circuit.png', -1)
 
 
+class MeasurementsHistogram(pygame.sprite.Sprite):
+    """Displays a histogram with measurements"""
+    def __init__(self, circuit, num_shots=DEFAULT_NUM_SHOTS):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = None
+        self.rect = None
+        self.set_circuit(circuit, num_shots)
+
+    # def update(self):
+    #     # Nothing yet
+    #     a = 1
+
+    def set_circuit(self, circuit, num_shots=DEFAULT_NUM_SHOTS):
+        backend_sim = BasicAer.get_backend('qasm_simulator')
+        qr = QuantumRegister(circuit.width(), 'q')
+        cr = ClassicalRegister(circuit.width(), 'c')
+        meas_circ = QuantumCircuit(qr, cr)
+        meas_circ.barrier(qr)
+        meas_circ.measure(qr, cr)
+        complete_circuit = circuit + meas_circ
+
+        job_sim = execute(complete_circuit, backend_sim, shots=num_shots)
+
+        # Grab the results from the job.
+        result_sim = job_sim.result()
+
+        # Print the counts, which are contained in a Python dictionary
+        counts = result_sim.get_counts(complete_circuit)
+        print(counts)
+
+        histogram = plot_histogram(counts)
+        histogram.savefig("data/bell_histogram.png")
+
+        self.image, self.rect = load_image('bell_histogram.png', -1)
+
+
 def main():
     pygame.init()
     screen = pygame.display.set_mode(WINDOW_SIZE)
@@ -118,8 +155,13 @@ def main():
     # Prepare objects
     clock = pygame.time.Clock()
     circuit = create_bell_circuit(cur_bell_state)
+
     circuit_diagram = CircuitDiagram(circuit)
-    allsprites = pygame.sprite.RenderPlain(circuit_diagram)
+    histogram = MeasurementsHistogram(circuit)
+
+    # allsprites = pygame.sprite.RenderPlain(circuit_diagram)
+    allsprites = pygame.sprite.RenderPlain(circuit_diagram, histogram)
+
 
     # Main Loop
     going = True
@@ -143,7 +185,9 @@ def main():
 
                     circuit = create_bell_circuit(cur_bell_state)
                     circuit_diagram.set_circuit(circuit)
-                    allsprites = pygame.sprite.RenderPlain(circuit_diagram)
+                    histogram.set_circuit(circuit)
+                    # allsprites = pygame.sprite.RenderPlain(circuit_diagram)
+                    allsprites = pygame.sprite.RenderPlain(circuit_diagram, histogram)
 
         allsprites.update()
 
