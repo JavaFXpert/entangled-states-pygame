@@ -21,7 +21,7 @@ NUM_BELL_STATES = 4
 
 DEFAULT_NUM_SHOTS = 100
 
-WINDOW_SIZE = 1500, 600
+WINDOW_SIZE = 1500, 1200
 
 WHITE = 255, 255, 255
 BLACK = 0, 0, 0
@@ -85,11 +85,24 @@ class HBox(pygame.sprite.RenderPlain):
         self.arrange()
 
     def arrange(self):
+        next_xpos = 0
+        sprite_list = self.sprites()
+        for sprite in sprite_list:
+            sprite.rect.left = next_xpos
+            next_xpos += sprite.rect.width
+
+class VBox(pygame.sprite.RenderPlain):
+    """Arranges sprites vertically"""
+    def __init__(self, *sprites):
+        pygame.sprite.RenderPlain.__init__(self, sprites)
+        self.arrange()
+
+    def arrange(self):
         next_ypos = 0
         sprite_list = self.sprites()
         for sprite in sprite_list:
-            sprite.rect.left = next_ypos
-            next_ypos += sprite.rect.width
+            sprite.rect.top = next_ypos
+            next_ypos += sprite.rect.height
 
 class CircuitDiagram(pygame.sprite.Sprite):
     """Displays a circuit diagram"""
@@ -196,6 +209,7 @@ def main():
     qsphere = QSphere(circuit)
 
     allsprites = HBox(circuit_diagram, qsphere, histogram)
+    # allsprites = VBox(circuit_diagram, qsphere, histogram)
 
     # Main Loop
     going = True
