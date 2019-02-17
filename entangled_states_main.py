@@ -88,8 +88,6 @@ class HBox(pygame.sprite.RenderPlain):
         next_ypos = 0
         sprite_list = self.sprites()
         for sprite in sprite_list:
-            print('sprite: ', sprite)
-            # sprite.rect = Rect((next_ypos, 0), (sprite.rect.width, 200))
             sprite.rect.left = next_ypos
             next_ypos += sprite.rect.width
 
@@ -113,6 +111,30 @@ class CircuitDiagram(pygame.sprite.Sprite):
         circuit_drawing.savefig("data/bell_circuit.png")
 
         self.image, self.rect = load_image('bell_circuit.png', -1)
+
+
+class QSphere(pygame.sprite.Sprite):
+    """Displays a qsphere"""
+    def __init__(self, circuit):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = None
+        self.rect = None
+        self.set_circuit(circuit)
+
+    # def update(self):
+    #     # Nothing yet
+    #     a = 1
+
+    def set_circuit(self, circuit):
+        backend_sv_sim = BasicAer.get_backend('statevector_simulator')
+        job_sim = execute(circuit, backend_sv_sim)
+        result_sim = job_sim.result()
+
+        quantum_state = result_sim.get_statevector(circuit, decimals=3)
+        qsphere = plot_state_qsphere(quantum_state)
+        qsphere.savefig("data/bell_qsphere.png")
+
+        self.image, self.rect = load_image('bell_qsphere.png', -1)
 
 
 class MeasurementsHistogram(pygame.sprite.Sprite):
@@ -171,8 +193,9 @@ def main():
 
     circuit_diagram = CircuitDiagram(circuit)
     histogram = MeasurementsHistogram(circuit)
+    qsphere = QSphere(circuit)
 
-    allsprites = HBox(circuit_diagram, histogram)
+    allsprites = HBox(circuit_diagram, qsphere, histogram)
 
     # Main Loop
     going = True
@@ -196,6 +219,7 @@ def main():
 
                     circuit = create_bell_circuit(cur_bell_state)
                     circuit_diagram.set_circuit(circuit)
+                    qsphere.set_circuit(circuit)
                     histogram.set_circuit(circuit)
                     allsprites.arrange()
 
