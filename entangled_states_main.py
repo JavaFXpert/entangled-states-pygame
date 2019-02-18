@@ -170,6 +170,42 @@ class QSphere(pygame.sprite.Sprite):
         self.image, self.rect = load_image('bell_qsphere.png', -1)
         self.rect.inflate_ip(-100, -100)
 
+class StatevectorGrid(pygame.sprite.Sprite):
+    """Displays a statevector grid"""
+    def __init__(self, circuit):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = None
+        self.rect = None
+        self.set_circuit(circuit)
+
+    # def update(self):
+    #     # Nothing yet
+    #     a = 1
+
+    def set_circuit(self, circuit):
+        backend_sv_sim = BasicAer.get_backend('statevector_simulator')
+        job_sim = execute(circuit, backend_sv_sim)
+        result_sim = job_sim.result()
+
+        quantum_state = result_sim.get_statevector(circuit, decimals=3)
+
+        self.image = pygame.Surface([150, len(quantum_state) * 50])
+        self.image.fill(WHITE)
+        self.rect = self.image.get_rect()
+
+        block_size = 30
+        x_offset = 50
+        y_offset = 50
+        for y in range(len(quantum_state)):
+            text_surface = ARIAL_30.render(COMP_BASIS_STATES[y], False, (0, 0, 0))
+            self.image.blit(text_surface,(x_offset, (y + 1) * block_size + y_offset))
+            rect = pygame.Rect(x_offset + block_size,
+                               (y + 1) * block_size + y_offset,
+                               abs(quantum_state[y]) * block_size,
+                               abs(quantum_state[y]) * block_size)
+            if abs(quantum_state[y]) > 0:
+                pygame.draw.rect(self.image, BLACK, rect, 1)
+
 class UnitaryGrid(pygame.sprite.Sprite):
     """Displays a unitary matrix grid"""
     def __init__(self, circuit):
@@ -188,6 +224,7 @@ class UnitaryGrid(pygame.sprite.Sprite):
         result_sim = job_sim.result()
 
         unitary = result_sim.get_unitary(circuit, decimals=3)
+        print('unitary: ', unitary)
 
         self.image = pygame.Surface([len(unitary) * 50, len(unitary) * 50])
         self.image.fill(WHITE)
@@ -206,9 +243,6 @@ class UnitaryGrid(pygame.sprite.Sprite):
                                    (y + 1) * block_size + y_offset,
                                    abs(unitary[y][x]) * block_size,
                                    abs(unitary[y][x]) * block_size)
-                # rect = pygame.Rect(x * block_size + x_offset,
-                #                    y * block_size + y_offset,
-                #                    block_size, block_size)
                 if abs(unitary[y][x]) > 0:
                     pygame.draw.rect(self.image, BLACK, rect, 1)
 
@@ -262,13 +296,15 @@ def main():
     unitary_grid = UnitaryGrid(circuit)
     histogram = MeasurementsHistogram(circuit)
     qsphere = QSphere(circuit)
+    statevector_grid = StatevectorGrid(circuit)
 
-    top_sprites = HBox(0, 0, circuit_diagram, unitary_grid)
-    bottom_sprites = HBox(0, 200, qsphere, histogram)
+    # top_sprites = HBox(0, 0, circuit_diagram, unitary_grid, statevector_grid)
+    # bottom_sprites = HBox(0, 200, qsphere, histogram)
 
 
-    # top_sprites = VBox(0, 0, circuit_diagram)
-    # bottom_sprites = VBox(300, 0, qsphere, histogram)
+    left_sprites = VBox(0, 0, circuit_diagram, qsphere)
+    middle_sprites = VBox(600, 0, unitary_grid, histogram)
+    right_sprites = VBox(1300, 0, statevector_grid)
 
     # Main Loop
     going = True
@@ -296,17 +332,28 @@ def main():
                     unitary_grid.set_circuit(circuit)
                     qsphere.set_circuit(circuit)
                     histogram.set_circuit(circuit)
+                    statevector_grid.set_circuit(circuit)
 
-                    top_sprites.arrange()
-                    bottom_sprites.arrange()
+                    # top_sprites.arrange()
+                    # bottom_sprites.arrange()
+
+                    left_sprites.arrange()
+                    middle_sprites.arrange()
+                    right_sprites.arrange()
 
         # top_sprites.update()
         # bottom_sprites.update()
 
         #Draw Everything
         screen.blit(background, (0, 0))
-        top_sprites.draw(screen)
-        bottom_sprites.draw(screen)
+
+        # top_sprites.draw(screen)
+        # bottom_sprites.draw(screen)
+
+        left_sprites.draw(screen)
+        middle_sprites.draw(screen)
+        right_sprites.draw(screen)
+
         pygame.display.flip()
 
     pygame.quit()
