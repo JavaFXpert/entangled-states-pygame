@@ -19,6 +19,9 @@ PSI_PLUS = 2
 PSI_MINUS = 3
 NUM_BELL_STATES = 4
 
+COMP_BASIS_STATES = ['00', '01', '10', '11']
+
+
 DEFAULT_NUM_SHOTS = 100
 
 WINDOW_SIZE = 1500, 1200
@@ -26,9 +29,18 @@ WINDOW_SIZE = 1500, 1200
 WHITE = 255, 255, 255
 BLACK = 0, 0, 0
 
-
 if not pygame.font: print ('Warning, fonts disabled')
 if not pygame.mixer: print ('Warning, sound disabled')
+
+pygame.init()
+screen = pygame.display.set_mode(WINDOW_SIZE)
+
+background = pygame.Surface(screen.get_size())
+background = background.convert()
+background.fill(WHITE)
+
+pygame.font.init()
+ARIAL_30 = pygame.font.SysFont('Arial', 30)
 
 main_dir = os.path.split(os.path.abspath(__file__))[0]
 data_dir = os.path.join(main_dir, 'data')
@@ -158,6 +170,48 @@ class QSphere(pygame.sprite.Sprite):
         self.image, self.rect = load_image('bell_qsphere.png', -1)
         self.rect.inflate_ip(-100, -100)
 
+class UnitaryGrid(pygame.sprite.Sprite):
+    """Displays a unitary matrix grid"""
+    def __init__(self, circuit):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = None
+        self.rect = None
+        self.set_circuit(circuit)
+
+    # def update(self):
+    #     # Nothing yet
+    #     a = 1
+
+    def set_circuit(self, circuit):
+        backend_unit_sim = BasicAer.get_backend('unitary_simulator')
+        job_sim = execute(circuit, backend_unit_sim)
+        result_sim = job_sim.result()
+
+        unitary = result_sim.get_unitary(circuit, decimals=3)
+
+        self.image = pygame.Surface([len(unitary) * 50, len(unitary) * 50])
+        self.image.fill(WHITE)
+        self.rect = self.image.get_rect()
+
+        block_size = 30
+        x_offset = 50
+        y_offset = 50
+        for y in range(len(unitary)):
+            text_surface = ARIAL_30.render(COMP_BASIS_STATES[y], False, (0, 0, 0))
+            self.image.blit(text_surface,(x_offset, (y + 1) * block_size + y_offset))
+            for x in range(len(unitary)):
+                text_surface = ARIAL_30.render(COMP_BASIS_STATES[x], False, (0, 0, 0))
+                self.image.blit(text_surface, ((x + 1) * block_size + x_offset, y_offset))
+                rect = pygame.Rect((x + 1) * block_size + x_offset,
+                                   (y + 1) * block_size + y_offset,
+                                   abs(unitary[y][x]) * block_size,
+                                   abs(unitary[y][x]) * block_size)
+                # rect = pygame.Rect(x * block_size + x_offset,
+                #                    y * block_size + y_offset,
+                #                    block_size, block_size)
+                if abs(unitary[y][x]) > 0:
+                    pygame.draw.rect(self.image, BLACK, rect, 1)
+
 class MeasurementsHistogram(pygame.sprite.Sprite):
     """Displays a histogram with measurements"""
     def __init__(self, circuit, num_shots=DEFAULT_NUM_SHOTS):
@@ -193,15 +247,7 @@ class MeasurementsHistogram(pygame.sprite.Sprite):
 
 
 def main():
-    pygame.init()
-    screen = pygame.display.set_mode(WINDOW_SIZE)
     pygame.display.set_caption('Entangled States')
-
-    background = pygame.Surface(screen.get_size())
-    background = background.convert()
-    background.fill(WHITE)
-
-    # TODO: Put things on background?
 
     screen.blit(background, (0, 0))
     pygame.display.flip()
@@ -213,11 +259,13 @@ def main():
     circuit = create_bell_circuit(cur_bell_state)
 
     circuit_diagram = CircuitDiagram(circuit)
+    unitary_grid = UnitaryGrid(circuit)
     histogram = MeasurementsHistogram(circuit)
     qsphere = QSphere(circuit)
 
-    top_sprites = HBox(0, 0, circuit_diagram)
+    top_sprites = HBox(0, 0, circuit_diagram, unitary_grid)
     bottom_sprites = HBox(0, 200, qsphere, histogram)
+
 
     # top_sprites = VBox(0, 0, circuit_diagram)
     # bottom_sprites = VBox(300, 0, qsphere, histogram)
@@ -245,6 +293,7 @@ def main():
                     circuit = create_bell_circuit(cur_bell_state)
 
                     circuit_diagram.set_circuit(circuit)
+                    unitary_grid.set_circuit(circuit)
                     qsphere.set_circuit(circuit)
                     histogram.set_circuit(circuit)
 
